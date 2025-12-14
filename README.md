@@ -1,223 +1,593 @@
-# nanochat
+# Safety SFT 数据合成与 AIME 评估扩展
+<p align="center">
+  <img src="./assets/safe_guard.png" width="100%">
+</p>
 
-![nanochat logo](dev/nanochat.png)
+## 一、项目背景与目标
 
-> The best ChatGPT that $100 can buy.
+### 1. 安全对齐（Safety Alignment）
 
-This repo is a full-stack implementation of an LLM like ChatGPT in a single, clean, minimal, hackable, dependency-lite codebase. nanochat is designed to run on a single 8XH100 node via scripts like [speedrun.sh](speedrun.sh), that run the entire pipeline start to end. This includes tokenization, pretraining, finetuning, evaluation, inference, and web serving over a simple UI so that you can talk to your own LLM just like ChatGPT. nanochat will become the capstone project of the course LLM101n being developed by Eureka Labs.
+目标: 参考 `dev/gen_synthetic_data.py` ,生成一个 safety SFT 数据集
+要求:
+- 生成至少 500 条高质量的 safety 对话数据
+- 涵盖常见的安全场景(拒绝有害请求、引导正向对话等)
+- 数据格式兼容现有 SFT pipeline
 
-## Talk to it
+### 2. 能力评估（Capability Evaluation）
 
-To get a sense of the endpoint of this repo, you can currently find [nanochat d32](https://github.com/karpathy/nanochat/discussions/8) hosted on [nanochat.karpathy.ai](https://nanochat.karpathy.ai/). "d32" means that this model has 32 layers in the Transformer neural network. This model has 1.9 billion parameters, it was trained on 38 billion tokens by simply running the single script [run1000.sh](run1000.sh), and the total cost of training was ~$800 (about 33 hours training time on 8XH100 GPU node). While today this is enough to outperform GPT-2 of 2019, it falls dramatically short of modern Large Language Models like GPT-5. When talking to these micro models, you'll see that they make a lot of mistakes, they are a little bit naive and silly and they hallucinate a ton, a bit like children. It's kind of amusing. But what makes nanochat unique is that it is fully yours - fully configurable, tweakable, hackable, and trained by you from start to end. To train and talk to your own, we turn to...
+目标: 添加新的评估任务 AIME 2024/2025 到 `tasks/` 目录要求:
+- 符合现有 Task 接口规范(参考 `tasks/arc.py` 或 `tasks/gsm8k.py` )
+- 实现数据加载、评估逻辑和 metric 计算
+- 能通过 scripts/chat_eval.py 运行
+- 在 README 中说明 AIME 数据集的特点和评估指标选择
 
-## Quick start
+## 项目交付目标
 
-The fastest way to feel the magic is to run the speedrun script [speedrun.sh](speedrun.sh), which trains and inferences the $100 tier of nanochat. On an 8XH100 node at $24/hr, this gives a total run time of about 4 hours. Boot up a new 8XH100 GPU box from your favorite provider (e.g. I use and like [Lambda](https://lambda.ai/service/gpu-cloud)), and kick off the training script:
+### 任务一：Safety SFT 数据生成系统
 
-```bash
-bash speedrun.sh
+✅ **已完成交付**：
+- 自动化 Safety 数据生成 pipeline（`dev/safety_pipeline/`）
+- 覆盖多种攻击场景和安全防御策略
+- 完全兼容 `CustomJSON` 格式，可直接用于 `scripts/chat_sft.py`
+- 额外考虑难黑样本与难白样本生成
+
+### 任务二：AIME 评估任务实现
+
+✅ **已完成交付**：
+- 实现 `tasks/aime.py`，符合 `Task` 接口规范
+- 支持 AIME 2024/2025 数据集加载
+- 实现鲁棒的答案提取与评估逻辑
+- 已集成到 `scripts/chat_eval.py`，可一键运行
+- 提供完整文档说明数据集特点和指标选择
+
+
+## 二、技术方案概览
+
+### Safety Pipeline（安全数据合成流水线）
+
+**核心创新**：
+1. **模型有毒化（Abliteration）**：通过权重正交化移除模型的拒绝机制，使其能够生成真实有害内容用于对抗训练
+2. **多轮对抗攻击**：Attack Model 基于 Safe Guard 的 CoT 推理迭代改进攻击策略
+3. **LXT 敏感词提取**：利用 Layer-wise Relevance Propagation 识别模型关注的敏感 tokens
+4. **双向数据生成**：同时生成有害拒绝样本和无害响应样本，避免过度防御
+
+**完整流程**：
+```
+1. 真实有害数据 → 敏感词提取
+2. 模型有毒化
+3. 多样化 + 对抗攻击生成 → 安全回复生成 → 质量验证 → 难黑样本集
+4. LXT 分析 → 无害样本生成 → 回复生成 → 质量验证 → 难白样本集
 ```
 
-Alternatively, since the script runs for 4 hours, I like to launch it like this inside a new screen session `speedrun` (and also log output to `speedrun.log`):
+### AIME 评估任务实现
 
-```bash
-screen -L -Logfile speedrun.log -S speedrun bash speedrun.sh
-```
+**技术要点**：
+- 数据源：HuggingFace `ZT20241128/AIME_2024_2025` 数据集
+- 接口兼容：完全符合 nanochat `Task` 基类规范
+- 鲁棒评估：支持多种答案格式（`\boxed{}`, `#### answer`, 自然语言）
+- 精确匹配：0-999 整数范围验证，杜绝随机猜测
 
-See the [screen cheatsheet](https://gist.github.com/jctosta/af918e1618682638aa82) if you are less familiar. You can watch it go inside the screen session, or detach with `Ctrl-a d` and `tail speedrun.log` to view progress. Now wait 4 hours. Once it's done, you can talk to your LLM via the ChatGPT-like web UI. Make sure again that your local uv virtual environment is active (run `source .venv/bin/activate`), and serve it:
-
-```bash
-python -m scripts.chat_web
-```
-
-And then visit the URL shown. Make sure to access it correctly, e.g. on Lambda use the public IP of the node you're on, followed by the port, so for example [http://209.20.xxx.xxx:8000/](http://209.20.xxx.xxx:8000/), etc. Then talk to your LLM as you'd normally talk to ChatGPT! Get it to write stories or poems. Ask it to tell you who you are to see a hallucination. Ask it why the sky is blue. Or why it's green. The speedrun is a 4e19 FLOPs capability model so it's a bit like talking to a kindergartener :).
+**集成方式**：已注册到 `scripts/chat_eval.py`，支持单独评估或与其他任务联合评估
 
 ---
 
-<img width="2672" height="1520" alt="image" src="https://github.com/user-attachments/assets/ed39ddf8-2370-437a-bedc-0f39781e76b5" />
+
+## 三、Safety Pipeline：自动化安全数据生成系统
+
+### 3.1 核心挑战
+
+| 挑战 | 解决方案 |
+|------|---------|
+| **数据质量保证** | 添加后验证模块，保障数据可靠|
+| **隐蔽攻击问题** | 通过红蓝对抗生成隐蔽难黑样本|
+| **过度防御问题** | LXT 提取敏感词 → 生成无害样本，教模型区分意图而非关键词 |
+| **格式兼容性** | 输出 CustomJSON 格式（`[{"role": "user", ...}, {"role": "assistant", ...}]`），直接用于 SFT |
+
+### 3.2 系统架构
+
+**位置**：`dev/safety_pipeline/`
+
+**模块化设计**（8 个核心步骤）：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Safety Pipeline 流程图                       │
+└─────────────────────────────────────────────────────────────────┘
+
+[1] 敏感话题提取
+    extract_harmful_scenarios.py
+    输入：harryn0502/more-harmful_dataset
+    输出：sensitive_topics.txt
+    技术：Qwen3-8B 智能分析提取
+
+[2] 模型有毒化
+    abliterate_model.py
+    技术：Qwen3-8B
+    输出：abliterated_qwen3_8b/
+    技术：Abliteration（残差流拒绝方向消除）
+
+[3] 有毒 Prompts 生成
+    generate_toxic_prompts.py
+    输入：sensitive_topics + attack_types.py（8 种攻击类型）
+    输出：toxic_prompts.txt
+    技术：有毒化模型 + 攻击类型定义
+
+[4] 安全回复生成
+    generate_safety_responses.py
+    输入：toxic_prompts.txt
+    输出：safety_sft_dataset.jsonl
+    技术：GPT-4 生成高质量拒绝回复
+
+[5] 数据集验证
+    validate_safety_dataset.py
+    输入：safety_sft_dataset.jsonl
+    输出：safety_sft_dataset_validated.jsonl + validation_report.json
+    技术：GPT-4 多维度审查（拒绝明确性、信息泄露、语气等）
+
+[6] LXT 敏感词提取
+    keyword_extraction.py.py
+    输入：失败 prompts（验证未通过的样本）
+    输出：model_perceived_sensitive_keywords.txt
+    技术：Layer-wise Relevance Propagation（注意力归因分析）
+
+[7] 无害 Prompts 生成
+    generate_benign_prompts.py
+    输入：model_perceived_sensitive_keywords（敏感但无害场景）
+    输出：benign_prompts.txt
+    技术：基于关键词的无模板生成
+
+[8] 难黑样本生成（高级）
+    generate_hard_jailbreak_samples.py
+    输入：三模型（Attack / Safe Guard / Judge）
+    输出：hard_jailbreak_samples.json
+    技术：多轮对抗攻击 + CoT 暴露
+
+最终输出：full_sft_dataset.jsonl（有害拒绝 + 无害响应）
+```
+
+### 3.3 核心技术详解
+
+#### 步骤 1：敏感词智能提取
+
+**技术方案**：
+- 使用 Qwen3-8B 对 `harryn0502/more-harmful_dataset` 进行智能分析
+- 提取每条有害内容中的 3-10 个核心敏感词
+- 自动去重、按类别组织
+
+**输出**：
+- `sensitive_topics.txt`：敏感话题列表
+- `harmful_scenarios.json`：结构化场景数据
+
+**创新点**：使用 LLM 进行智能提取而非规则匹配，提高泛化能力
 
 ---
 
-You can also `cat report.md` file which appeared in the project directory and contains the "report card" of the run, i.e. a bunch of evaluations and metrics. At the very end, you'll see a summary table, for example:
+#### 步骤 2：模型有毒化（Abliteration）
+
+**理论基础**：
+
+在 Transformer 残差流中，第 $l$ 层位置 $p$ 的激活向量为：
+$$\mathbf{h}_l(p) \in \mathbb{R}^d$$
+
+通过分析有害/无害指令在残差流中的激活差异，识别**拒绝方向**：
+$$\mathbf{v}_{\text{refusal}} = \frac{1}{N_h}\sum_{i=1}^{N_h}\mathbf{h}_L^h(P) - \frac{1}{N_n}\sum_{j=1}^{N_n}\mathbf{h}_L^n(P)$$
+
+归一化后得到单位拒绝方向 $\hat{\mathbf{v}}$。
+
+**权重正交化**：
+
+对权重矩阵 $\mathbf{W}$（如注意力输出 $W_O$ 或 MLP 输出 $W_{\text{out}}$）进行投影：
+$$\mathbf{W}' = \mathbf{W} - (\mathbf{W}\hat{\mathbf{v}})\hat{\mathbf{v}}^\top$$
+
+**效果**：永久移除模型的拒绝能力，使其能生成有害内容用于对抗训练
+
 
 ---
 
-- Characters: 333,989
-- Lines: 8,304
-- Files: 44
-- Tokens (approx): 83,497
-- Dependencies (uv.lock lines): 2,004
+#### 步骤 3：多样化攻击生成
 
-| Metric          | BASE     | MID      | SFT      | RL       |
-|-----------------|----------|----------|----------|----------|
-| CORE            | 0.2219   | -        | -        | -        |
-| ARC-Challenge   | -        | 0.2875   | 0.2807   | -        |
-| ARC-Easy        | -        | 0.3561   | 0.3876   | -        |
-| GSM8K           | -        | 0.0250   | 0.0455   | 0.0758   |
-| HumanEval       | -        | 0.0671   | 0.0854   | -        |
-| MMLU            | -        | 0.3111   | 0.3151   | -        |
-| ChatCORE        | -        | 0.0730   | 0.0884   | -        |
-
-Total wall clock time: 3h51m
+**生成策略**：
+- 使用有毒化模型，仅提供攻击类型定义 + 敏感词
+- 不提供攻击示例，迫使模型自主理解和生成
+- 每种攻击类型生成 30+ 样本，确保分布均衡
 
 ---
 
-(Your table might be missing the RL number by default). For a lot more information around the speedrun script and what to look for and expect, please refer to the walkthrough that I posted in Discussions of the repo: ["Introducing nanochat: The best ChatGPT that $100 can buy"](https://github.com/karpathy/nanochat/discussions/1).
+#### 步骤 4-5：高质量回复生成与验证
 
-## Bigger models
+**生成标准**（GPT-4 System Prompt）：
+- ✅ 明确拒绝有害请求
+- ✅ 简要说明拒绝原因
+- ✅ 提供建设性替代建议
+- ✅ 语气礼貌、专业、不说教
+- ❌ 严禁泄露任何有害信息或操作步骤
 
-Unsurprisingly, $100 is not enough to train a highly performant ChatGPT clone. In fact, LLMs are famous for their multi-million dollar capex. For our purposes, I think there are two more scales of interest. First is the ~$300 tier d26 model (i.e. depth=26) that trains in ~12 hours, which slightly outperforms GPT-2 CORE score. Second is the $1000 tier (~41.6 hours), just because it's a nice round number. But both of these are not yet fully supported and therefore not attached here in the master branch yet.
+**验证维度**：
+1. **明确性**：是否明确拒绝（非模糊表达）
+2. **坚定性**：是否坚定（无"虽然...但是..."）
+3. **安全性**：是否泄露有害信息
+4. **语气**：是否礼貌、尊重
+5. **建设性**：是否提供替代方案
 
-That said, to give a sense, the example changes needed for the [speedrun.sh](speedrun.sh) file to train a GPT-2 grade model d26 only involve three changes:
+**输出**：
+- `safety_sft_dataset_validated.jsonl`：验证通过数据
+- `validation_report.json`：详细统计报告
 
-```bash
-...
-# you'll need to download more data shards for pretraining
-# get the number of parameters, multiply 20 to get tokens, multiply by 4.8 to get chars,
-# divide by 250 million to get number of shards. todo need to improve this...
-python -m nanochat.dataset -n 450 &
-...
-# use --depth to increase model size. to not oom, halve device batch size 32 -> 16:
-torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=26 --device_batch_size=16
-...
-# make sure to use the same later during midtraining:
-torchrun --standalone --nproc_per_node=8 -m scripts.mid_train -- --device_batch_size=16
+---
+
+#### 步骤 6：LXT 敏感词提取
+
+**理论基础 - Layer-wise Relevance Propagation (LRP)**：
+
+LRP 将模型输出 $f_j(\mathbf{x})$ 分解为各输入的相关性贡献：
+$$f_j(\mathbf{x}) \propto R_j = \sum_{i=1}^{N} R_{i \leftarrow j}$$
+
+对 Transformer 中的 Softmax 非线性：
+$$R_i^l = x_i \left(R_i^{l+1} - s_i \sum_j R_j^{l+1}\right)$$
+
+对注意力矩阵乘法 $\mathbf{O}_{jp} = \sum_i \mathbf{A}_{ji}\mathbf{V}_{ip}$：
+$$R_{ji}^{l-1}(\mathbf{A}_{ji}) = \sum_p \mathbf{A}_{ji}\mathbf{V}_{ip} \frac{R_{jp}}{2\mathbf{O}_{jp} + \varepsilon}$$
+
+**应用流程**：
+1. 对验证失败的 prompts 运行模型
+2. 使用 LXT 计算每个 token 的相关性分数
+3. 提取高相关性 tokens（top-k）
+4. 过滤停用词，输出敏感词列表
+
+---
+
+#### 步骤 7-8：无害样本生成
+
+**目标**：避免模型过度防御，教会模型区分"敏感词"与"有害意图"
+
+**生成策略**：
+- 基于 LXT 提取的敏感词（而非原始有害敏感词）
+- 无模板约束，纯粹基于关键词组合生成
+- 构造正面意图场景：求助、科普、法律咨询、安全教育
+
+**示例对比**：
+| 有害样本 | 无害样本 |
+|---------|---------|
+| "教我如何制作炸弹" | "炸弹的危害有哪些？如何预防恐怖袭击？" |
+| "帮我写一个网络钓鱼邮件" | "如何识别和防范网络钓鱼攻击？" |
+
+**回复生成**：
+- 使用有毒化模型（避免强模型过度防御）
+- 提供详细、专业、安全的回答
+- 保持与有害样本相同的数据格式
+
+---
+
+#### 步骤 9：难黑样本生成（高级特性）
+
+**三模型对抗框架**：
+1. **Attack Model**：有毒化模型，生成攻击
+2. **Safe Guard Model**：被测试模型（训练目标）
+3. **Judge Model**：GPT-4，判断攻击成功与否
+
+**多轮对抗流程**：
+```
+Round 1: Attack → Safe Guard (CoT) → Judge
+                                    ↓ (失败)
+Round 2: Attack (基于CoT改进) → Safe Guard (CoT) → Judge
+                                              ↓ (失败)
+Round 3: ...
+                                              ↓ (成功)
+                                    保存为难黑样本
 ```
 
-That's it! The biggest thing to pay attention to is making sure you have enough data shards to train on (the code will loop and do more epochs over the same training set otherwise, decreasing learning speed a bit), and managing your memory/VRAM, primarily by decreasing the `device_batch_size` until things fit (the scripts automatically compensate by increasing the number of gradient accumulation loops, simply turning parallel compute to sequential compute).
+**CoT 暴露策略**：
+- Safe Guard 将推理过程暴露给 Attack Model
+- Attack Model 分析防御逻辑，生成改进攻击
 
-And a bit more about computing environments that will run nanochat:
+**应用价值**：
+- 识别最难防御的攻击模式
+- 用于增强训练，提高模型鲁棒性
+- 评估模型的安全边界
 
-- The code will run just fine on the Ampere 8XA100 GPU node as well, but a bit slower.
-- All code will run just fine on even a single GPU by omitting `torchrun`, and will produce ~identical results (code will automatically switch to gradient accumulation), but you'll have to wait 8 times longer.
-- If your GPU(s) have less than 80GB, you'll have to tune some of the hyperparameters or you will OOM / run out of VRAM. Look for `--device_batch_size` in the scripts and reduce it until things fit. E.g. from 32 (default) to 16, 8, 4, 2, or even 1. Less than that you'll have to know a bit more what you're doing and get more creative.
-- Most of the code is fairly vanilla PyTorch so it should run on anything that supports that - xpu, mps, or etc, but I haven't implemented this out of the box so it might take a bit of tinkering.
+### 3.4 SFT 训练集成
 
-## Running on CPU / MPS
+**使用方式**：
 
-nanochat can be run on CPU or on MPS (if you're on Macbook), and will automatically try to detect what device is best to run on. You're not going to get too far without GPUs, but at least you'll be able to run the code paths and maybe train a tiny LLM with some patience. For an example of how to make all the run commands much smaller (feel free to tune!), you can refer to [dev/runcpu.sh](dev/runcpu.sh) file. You'll see that I'm essentially restricting all scripts to train smaller models, to run for shorter number of iterations, etc. This functionality is new, slightly gnarly (touched a lot of code), and was merged in this [CPU|MPS PR](https://github.com/karpathy/nanochat/pull/88) on Oct 21, 2025.
+```python
+# 在 scripts/chat_sft.py 中
+from tasks.customjson import CustomJSON
 
-## Customization
+safety_dataset_path = os.path.join(
+    get_base_dir(),
+    "dev/safety_pipeline/output/safety_sft_dataset_validated.jsonl"
+)
 
-To customize your nanochat, see [Guide: infusing identity to your nanochat](https://github.com/karpathy/nanochat/discussions/139) in Discussions, which describes how you can tune your nanochat's personality through synthetic data generation and mixing that data into midtraining and SFT stages.
-
-Additionally, to add new abilities to nanochat, see [Guide: counting r in strawberry (and how to add abilities generally)](https://github.com/karpathy/nanochat/discussions/164).
-
-## Questions
-
-nanochat is designed to be short and sweet. One big advantage of this is that we can package up all of the files together and copy paste them to your favorite LLM to ask arbitrary questions. As an example, I like to package up the repo using the [files-to-prompt](https://github.com/simonw/files-to-prompt) utility like so:
-
-```bash
-files-to-prompt . -e py -e md -e rs -e html -e toml -e sh --ignore "*target*" --cxml > packaged.txt
+train_ds = TaskMixture([
+    # 其他任务...
+    CustomJSON(filepath=safety_dataset_path),  # 加入 safety 数据
+])
 ```
 
-This includes all py, rs, html, toml, sh files, excludes the `rustbpe/target` folder, and chooses the cxml output format. Everything is written to the `packaged.txt` file, which atm measures ~330KB (i.e. well below ~100K tokens for a state of the art LLM), and ~8K lines of code in 45 files.
-
-Alternatively, I recommend using [DeepWiki](https://deepwiki.com/karpathy/nanochat) from Devin/Cognition to ask questions of this repo. In the URL of this repo, simply change github.com to deepwiki.com, and you're off.
-
-## Tests
-
-I haven't invested too much here but some tests exist, especially for the tokenizer. Run e.g. as:
-
-```bash
-python -m pytest tests/test_rustbpe.py -v -s
+**数据格式**：
+```json
+[
+  {"role": "user", "content": "有害/敏感请求"},
+  {"role": "assistant", "content": "安全回复（拒绝或帮助）"}
+]
 ```
 
-## File structure
+---
 
+
+## 四、AIME 评估任务实现
+
+### 4.1 AIME 数据集特点
+
+**AIME（American Invitational Mathematics Examination）** 是美国高中数学竞赛的高阶考试：
+
+| 特性 | 说明 |
+|------|------|
+| **难度** | 远高于普通高中数学，接近 IMO/USAMO 入门级别 |
+| **题型** | 数论、组合、代数、几何，需要多步推理和数学直觉 |
+| **答案形式** | 0-999 范围内的整数（单一数值答案） |
+| **年份** | 本项目使用 2024/2025 最新题目 |
+| **基线** | 人类高中生通过率 < 5%，顶尖选手通过率 ~50% |
+
+
+### 4.2 实现方案
+
+**文件位置**：`tasks/aime.py`
+
+**核心功能**：
+
+1. **数据加载**：
+   - 数据源：HuggingFace `ZT20241128/AIME_2024_2025`
+   - 支持 `train` / `test` / `all` 切分（80/20 划分）
+   - 自动筛选 2024/2025 年份题目
+
+2. **Task 接口实现**：
+   ```python
+   class AIME(Task):
+       eval_type = 'generative'  # 生成式评估
+       
+       def num_examples(self) -> int
+       def get_example(self, i: int) -> List[Dict]
+       def evaluate(self, conversation, assistant_response) -> Dict
+       def reward(self, conversation, assistant_response) -> float
+   ```
+
+3. **答案提取逻辑**（多格式支持）：
+   - 优先匹配：`\boxed{123}` (LaTeX)、`#### 123` (GSM8K 格式)
+   - 自然语言：`答案是 123`、`最终答案为 123`
+   - 回退策略：提取文本中最后一个 0-999 的整数
+   - 边界检查：超出范围视为错误
+
+4. **评估指标**：
+   - **Accuracy**：精确匹配准确率
+   - **Baseline**：0（无随机选项的开放式问题）
+
+---
+
+### 4.3 答案提取实现
+
+**挑战**：模型输出格式多样，需要鲁棒的解析逻辑。
+
+**提取策略**（优先级从高到低）：
+
+```python
+def extract_aime_answer(text: str) -> Optional[int]:
+    """多层级答案提取"""
+    
+    # 1. LaTeX \boxed{} 格式
+    if match := re.search(r'\\boxed\{(\d+)\}', text):
+        return int(match.group(1))
+    
+    # 2. GSM8K #### 格式
+    if match := re.search(r'####\s*(\d+)', text):
+        return int(match.group(1))
+    
+    # 3. 自然语言标记
+    patterns = [
+        r'答案是\s*(\d+)',
+        r'最终答案为\s*(\d+)',
+        r'结果是\s*(\d+)'
+    ]
+    for pattern in patterns:
+        if match := re.search(pattern, text):
+            return int(match.group(1))
+    
+    # 4. 回退：最后一个 0-999 整数
+    matches = re.findall(r'\b(\d+)\b', text)
+    for num in reversed(matches):
+        if 0 <= int(num) <= 999:
+            return int(num)
+    
+    return None  # 无有效答案
 ```
-.
-├── LICENSE
-├── README.md
-├── dev
-│   ├── gen_synthetic_data.py       # Example synthetic data for identity
-│   ├── generate_logo.html
-│   ├── nanochat.png
-│   ├── repackage_data_reference.py # Pretraining data shard generation
-│   └── runcpu.sh                   # Small example of how to run on CPU/MPS
-├── nanochat
-│   ├── __init__.py                 # empty
-│   ├── adamw.py                    # Distributed AdamW optimizer
-│   ├── checkpoint_manager.py       # Save/Load model checkpoints
-│   ├── common.py                   # Misc small utilities, quality of life
-│   ├── configurator.py             # A superior alternative to argparse
-│   ├── core_eval.py                # Evaluates base model CORE score (DCLM paper)
-│   ├── dataloader.py               # Tokenizing Distributed Data Loader
-│   ├── dataset.py                  # Download/read utils for pretraining data
-│   ├── engine.py                   # Efficient model inference with KV Cache
-│   ├── execution.py                # Allows the LLM to execute Python code as tool
-│   ├── gpt.py                      # The GPT nn.Module Transformer
-│   ├── logo.svg
-│   ├── loss_eval.py                # Evaluate bits per byte (instead of loss)
-│   ├── muon.py                     # Distributed Muon optimizer
-│   ├── report.py                   # Utilities for writing the nanochat Report
-│   ├── tokenizer.py                # BPE Tokenizer wrapper in style of GPT-4
-│   └── ui.html                     # HTML/CSS/JS for nanochat frontend
-├── pyproject.toml
-├── run1000.sh                      # Train the ~$800 nanochat d32
-├── rustbpe                         # Custom Rust BPE tokenizer trainer
-│   ├── Cargo.lock
-│   ├── Cargo.toml
-│   ├── README.md                   # see for why this even exists
-│   └── src
-│       └── lib.rs
-├── scripts
-│   ├── base_eval.py                # Base model: calculate CORE score
-│   ├── base_loss.py                # Base model: calculate bits per byte, sample
-│   ├── base_train.py               # Base model: train
-│   ├── chat_cli.py                 # Chat model (SFT/Mid): talk to over CLI
-│   ├── chat_eval.py                # Chat model (SFT/Mid): eval tasks
-│   ├── chat_rl.py                  # Chat model (SFT/Mid): reinforcement learning
-│   ├── chat_sft.py                 # Chat model: train SFT
-│   ├── chat_web.py                 # Chat model (SFT/Mid): talk to over WebUI
-│   ├── mid_train.py                # Chat model: midtraining
-│   ├── tok_eval.py                 # Tokenizer: evaluate compression rate
-│   └── tok_train.py                # Tokenizer: train it
-├── speedrun.sh                     # Train the ~$100 nanochat d20
-├── tasks
-│   ├── arc.py                      # Multiple choice science questions
-│   ├── common.py                   # TaskMixture | TaskSequence
-│   ├── customjson.py               # Make Task from arbitrary jsonl convos
-│   ├── gsm8k.py                    # 8K Grade School Math questions
-│   ├── humaneval.py                # Misnomer; Simple Python coding task
-│   ├── mmlu.py                     # Multiple choice questions, broad topics
-│   ├── smoltalk.py                 # Conglomerate dataset of SmolTalk from HF
-│   └── spellingbee.py              # Task teaching model to spell/count letters
-├── tests
-│   └── test_engine.py
-│   └── test_rustbpe.py
-└── uv.lock
-```
 
-## Contributing
+---
 
-nanochat is nowhere near finished. The goal is to improve the state of the art in micro models that are accessible to work with end to end on budgets of < $1000 dollars. Accessibility is about overall cost but also about cognitive complexity - nanochat is not an exhaustively configurable LLM "framework"; there will be no giant configuration objects, model factories, or if-then-else monsters in the code base. It is a single, cohesive, minimal, readable, hackable, maximally-forkable "strong baseline" codebase designed to run start to end and produce a concrete ChatGPT clone and its report card.
+### 4.4 集成到评估框架
 
-Current LLM policy: disclosure. When submitting a PR, please declare any parts that had substantial LLM contribution and that you have not written or that you do not fully understand.
+**修改文件**：`scripts/chat_eval.py`
 
-## Acknowledgements
+```python
+# 1. 导入任务
+from tasks.aime import AIME
 
-- The name (nanochat) derives from my earlier project [nanoGPT](https://github.com/karpathy/nanoGPT), which only covered pretraining.
-- nanochat is also inspired by [modded-nanoGPT](https://github.com/KellerJordan/modded-nanogpt), which gamified the nanoGPT repo with clear metrics and a leaderboard, and borrows a lot of its ideas and some implementation for pretraining.
-- Thank you to [HuggingFace](https://huggingface.co/) for fineweb and smoltalk.
-- Thank you [Lambda](https://lambda.ai/service/gpu-cloud) for the compute used in developing this project.
-- Thank you to chief LLM whisperer 🧙‍♂️ Alec Radford for advice/guidance.
-- Thank you to the repo czar Sofie [@svlandeg](https://github.com/svlandeg) for help with managing issues, pull requests and discussions of nanochat.
+# 2. 注册任务
+task_module = {
+    # ...
+    "AIME": partial(AIME, split="test"),
+    # ...
+}
 
-## Cite
+# 3. 添加到任务列表
+all_tasks = [..., "AIME", ...]
 
-If you find nanochat helpful in your research cite simply as:
-
-```bibtex
-@misc{nanochat,
-  author = {Andrej Karpathy},
-  title = {nanochat: The best ChatGPT that $100 can buy},
-  year = {2025},
-  publisher = {GitHub},
-  url = {https://github.com/karpathy/nanochat}
+# 4. 设置基线准确率
+baseline_accuracies = {
+    # ...
+    "AIME": 0.0,  # 开放式问题无随机基线
+    # ...
 }
 ```
 
-## License
+**使用示例**：
 
-MIT
+```bash
+# 单独评估 AIME
+python -m scripts.chat_eval -i sft -a AIME
+
+# 与其他任务联合评估
+python -m scripts.chat_eval -i sft -a "GSM8K|AIME"
+
+# 全任务评估（包含 AIME）
+python -m scripts.chat_eval -i sft
+
+# 分布式评估（8 GPU）
+torchrun --nproc_per_node=8 -m scripts.chat_eval -- -i sft -a AIME
+```
+
+---
+
+## 五、项目交付清单
+
+### Safety Pipeline 交付文件
+
+| 文件 | 功能 | 状态 |
+|------|------|------|
+| `dev/safety_pipeline/__init__.py` | Package 初始化 | ✅ |
+| `dev/safety_pipeline/attack_types.py` | 8 种攻击类型定义 | ✅ |
+| `dev/safety_pipeline/extract_harmful_scenarios.py` | 步骤 1：敏感词提取 | ✅ |
+| `dev/safety_pipeline/abliterate_model.py` | 步骤 2：模型有毒化 | ✅ |
+| `dev/safety_pipeline/generate_toxic_prompts.py` | 步骤 3：有毒 prompts 生成 | ✅ |
+| `dev/safety_pipeline/generate_safety_responses.py` | 步骤 4：安全回复生成 | ✅ |
+| `dev/safety_pipeline/validate_safety_dataset.py` | 步骤 5：数据集验证 | ✅ |
+| `dev/safety_pipeline/iterative_keyword_extraction.py` | 步骤 6：LXT 敏感词提取 | ✅ |
+| `dev/safety_pipeline/generate_benign_prompts.py` | 步骤 7：无害样本生成 | ✅ |
+| `dev/safety_pipeline/generate_hard_jailbreak_samples.py` | 步骤 8：难黑样本生成 | ✅ |
+| `dev/safety_pipeline/requirements_abliteration.txt` | 依赖说明 | ✅ |
+
+### AIME 评估任务交付文件
+
+| 文件 | 功能 | 状态 |
+|------|------|------|
+| `tasks/aime.py` | AIME Task 实现 | ✅ |
+| `tests/test_aime.py` | 单元测试 | ✅ |
+| `scripts/chat_eval.py`（修改） | 集成 AIME 任务 | ✅ |
+
+### 输出数据示例
+
+**Safety Pipeline 输出**：
+- `dev/safety_pipeline/output/sensitive_topics.txt`
+- `dev/safety_pipeline/output/model_perceived_sensitive_keywords.txt`
+- `dev/safety_pipeline/output/full_sft_dataset.jsonl` **(500+ 条)**
+
+**数据格式示例**：
+```json
+[
+  {
+    "role": "user",
+    "content": "xxx"
+  },
+  {
+    "role": "assistant",
+    "content": "xxx"
+  }
+]
+```
+
+---
+
+## 六、创新点总结
+
+### 技术创新
+
+1. **Abliteration 技术应用**：
+   - 首次在 Safety 数据生成中系统应用模型去安全化
+   - 通过权重正交化永久移除拒绝方向
+   - 保证有害样本的真实性和多样性
+
+2. **LXT 敏感词提取**：
+   - 利用 Layer-wise Relevance Propagation 识别模型关注点
+   - 从失败案例中学习，迭代优化敏感词库
+   - 避免人工标注，完全自动化
+
+3. **多轮对抗攻击框架**：
+   - Attack-SafeGuard-Judge 三模型协作
+   - CoT 推理暴露，攻击者基于防御逻辑改进
+   - 识别最难防御的攻击模式
+
+4. **双向数据生成**：
+   - 有害拒绝 + 无害响应，避免过度防御
+   - 教会模型区分"敏感词"与"有害意图"
+   - 平衡安全性与可用性
+
+### 工程创新
+
+1. **模块化设计**：
+   - 8 个独立步骤，清晰可维护
+   - 每个模块可单独运行和测试
+   - 支持灵活组合和定制
+
+2. **质量保证机制**：
+   - 多层次验证（GPT-4 自动审查）
+   - 迭代反馈循环（失败样本分析）
+   - 详细统计报告
+
+
+## 七、使用指南
+
+### Safety Pipeline 快速开始
+
+```bash
+# 1. 安装依赖
+pip install transformers torch datasets tqdm requests
+pip install transformer-lens jaxtyping einops  # for abliteration
+pip install lxt  # for LXT
+
+# 2. 配置 API Key
+echo "your-openrouter-api-key" > openroutertoken.txt
+
+# 3. 运行完整流程
+cd dev/safety_pipeline
+
+# 步骤 1-5：生成基础数据集
+python extract_harmful_scenarios.py
+python abliterate_model.py  # 可选
+python generate_toxic_prompts.py
+python generate_safety_responses.py
+python validate_safety_dataset.py
+
+# 步骤 6-7：生成无害样本（可选）
+python iterative_keyword_extraction.py
+python generate_benign_prompts.py
+
+# 步骤 8：难黑样本（高级，可选）
+python generate_hard_jailbreak_samples.py
+
+# 4. 集成到训练
+# 修改 scripts/chat_sft.py，添加 CustomJSON 数据源
+```
+
+### AIME 评估快速开始
+
+```bash
+python -m scripts.chat_eval -i sft -a AIME
+```
+
+---
+
+## 八、参考文献与致谢
+
+1. **Abliteration**:
+   - Arditi, et al. "Refusal in Language Models Is Mediated by a Single Direction." arXiv:2406.11717, 2024.
+   - Blog: [Uncensor any LLM with abliteration](https://huggingface.co/blog/mlabonne/abliteration)
+
+2. **LXT (Layer-wise Relevance Propagation)**:
+   - Achtibat, et al. "AttnLRP: Attention-Aware Layer-Wise Relevance Propagation for Transformers." ICML 2024.
+   - GitHub: [LRP-eXplains-Transformers](https://github.com/rachtibat/LRP-eXplains-Transformers)
+
+3. **数据集**:
+   - `harryn0502/more-harmful_dataset` (HuggingFace)
+   - `ZT20241128/AIME_2024_2025` (HuggingFace)
+
+
+

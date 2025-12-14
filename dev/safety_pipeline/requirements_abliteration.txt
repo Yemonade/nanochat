@@ -1,0 +1,11 @@
+# Safety Pipeline - Abliteration 和 LXT 依赖
+
+# Abliteration 依赖
+pip install transformer-lens>=1.0.0
+pip install jaxtyping
+pip install einops
+pip install circuitsvis  # 可选，用于可视化
+
+# LXT (Layer-wise Relevance Propagation) 依赖
+pip install lxt
+

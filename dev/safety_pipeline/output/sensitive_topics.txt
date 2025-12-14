@@ -1,0 +1,330 @@
+offline_crime
+online_crime
+drugs
+gambling
+pornography
+prostitution
+slavery
+suicide
+terrorism
+weapons
+body_shaming
+health_shaming
+politics
+racism
+religion
+sexual_minorities
+sexism
+social_injustice
+Murder  
+Robbery  
+Fraud  
+Money laundering  
+Tax evasion  
+Bribery  
+Corruption  
+Insider trading  
+Drug trafficking  
+Human trafficking  
+Smuggling  
+Kidnapping  
+Blackmail  
+Extortion  
+Domestic violence  
+Child abuse  
+Sexual assault  
+Rape  
+Stalking  
+Identity theft  
+Cyberbullying
+Hacking  
+Credit card fraud  
+Counterfeiting money  
+Forgery of documents  
+Arson  
+Vandalism  
+Burglary  
+Shoplifting  
+Drunk driving  
+Hit and run  
+Illegal firearms possession  
+Poaching protected animals  
+Illegal logging  
+Dumping hazardous waste  
+Copyright infringement
+Trademark infringement  
+Piracy of software/media
+Operating a Ponzi scheme  
+Running an unlicensed casino  
+prostitution
+Gambling   
+Selling alcohol to minors  
+Selling tobacco to minors  
+Employment of minors in hazardous work  
+Discrimination in hiring   
+Harassment in the workplace
+Perjury  
+Contempt of court  
+Obstruction of justice  
+Witness tampering  
+Election fraud  
+Hate crimes  
+Terrorism  
+Organized crime participation  
+Unauthorized surveillance 
+Invasion of privacy 
+Illegal wiretapping  
+Breaking quarantine orders
+Practicing medicine without a license  
+Practicing law without a license  
+False advertising
+Price fixing 
+Bid rigging  
+Illegal dumping of e‑waste  
+Operating a vehicle without a license  
+Illegal immigration 
+Harboring fugitives  
+Resisting arrest 
+Public indecency 
+Defamation 
+Blasphemy 
+Selling counterfeit goods  
+Tampering with evidence  
+Animal cruelty  
+Illegal adoption or baby selling  
+Bigamy or polygamy   
+Revenge porn distribution  
+Doxxing 
+Swatting  
+Creating or distributing child sexual abuse material  
+Illegal surveillance drone use
+Violating trade sanctions  
+Illegal export of weapons  
+Espionage  
+Sabotage of critical infrastructure  
+Credit manipulation
+Pyramid schemes
+Unlicensed pharmaceutical sales  
+Food safety violations
+Hoarding and price gouging 
+Illegal organ trade  
+Grave desecration  
+Desecration of national symbols
+Unauthorized access to personal data
+Bullying leading to extortion or assault  
+Fake charity scams  
+Impersonating a police officer  
+Impersonating a public official
+Murder  
+Arson  
+Kidnapping  
+Robbery  
+Burglary  
+Shoplifting  
+Pickpocketing  
+Fraud  
+Embezzlement  
+Money laundering  
+Tax evasion  
+Bribery  
+Perjury  
+Blackmail  
+Extortion  
+Identity theft  
+Credit card fraud  
+Insurance fraud  
+Securities fraud  
+Insider trading  
+Counterfeiting money  
+Counterfeiting goods  
+Human trafficking  
+Drug trafficking  
+Arms trafficking  
+Smuggling  
+Wildlife trafficking  
+Organ trafficking  
+Cyberstalking  
+Cyberbullying  
+Hacking  
+Phishing  
+Ransomware attacks  
+Denial-of-service attacks  
+Illegal surveillance  
+Wiretapping without consent  
+Voyeurism  
+Revenge porn distribution  
+Child pornography production  
+Child pornography possession  
+Child pornography distribution  
+Statutory rape  
+Sexual assault  
+Sexual harassment   
+Indecent exposure  
+Public lewdness  
+Domestic violence  
+Stalking  
+Harboring a fugitive  
+Assault  
+Battery  
+Attempted murder  
+Vehicular homicide  
+Hit and run  
+Driving under the influence  
+Driving while intoxicated  
+Street racing  
+Reckless driving  
+Carjacking  
+Joyriding
+Vandalism  
+Graffiti on public property  
+Trespassing  
+Breaking and entering  
+Squatting
+Illegal dumping of waste  
+Illegal logging  
+Illegal fishing  
+Poaching  
+Illegal mining  
+Illegal sand extraction  
+Polluting waterways  
+Discharging toxic waste  
+Illegal burning of waste  
+Noise violations   
+Disturbing the peace  
+Riot participation  
+Inciting violence  
+Hate crimes  
+Terrorism  
+Providing material support to terrorists  
+Bomb making  
+Possession of illegal explosives  
+Illegal firearm possession  
+Illegal firearm sale  
+Unregistered firearm manufacturing  
+Carrying concealed weapon without permit  
+Brandishing a weapon  
+Armed robbery  
+Hostage taking  
+Hijacking  
+Piracy at sea  
+Airplane hijacking  
+Tampering with aircraft  
+Tampering with railway infrastructure  
+Computer system sabotage  
+Industrial espionage  
+Trade secret theft  
+Patent infringement
+Copyright piracy
+Software piracy
+DVD counterfeiting  
+Trademark counterfeiting  
+Selling stolen goods  
+Receiving stolen property  
+Fencing stolen merchandise  
+Check fraud  
+Forging signatures  
+Forgery of documents  
+Passport forgery  
+Visa fraud  
+Immigration document fraud  
+Illegal border crossing  
+Harboring undocumented immigrants   
+Marriage fraud for immigration  
+Election fraud  
+Voter intimidation  
+Ballot stuffing  
+Tampering with voting machines  
+Bribing public officials  
+Misuse of public funds  
+Official corruption  
+Obstruction of justice  
+Tampering with evidence  
+Witness intimidation  
+Witness bribery  
+Prison escape  
+Aiding prison escape  
+Contempt of court   
+Failure to appear in court  
+Resisting arrest  
+Assaulting a police officer  
+Impersonating a police officer  
+Impersonating a public official  
+False reporting of a crime  
+Filing false police report  
+False emergency call  
+Bomb threat hoax  
+Hoax emergency communication  
+Animal cruelty  
+Dog fighting  
+Cockfighting  
+Operating illegal casino  
+Illegal online gambling operation  
+Sports match fixing  
+Point shaving  
+Money mule activities  
+Pyramid schemes  
+Ponzi schemes  
+Unlicensed financial services  
+Unlicensed medical practice  
+Unlicensed legal practice  
+Unlicensed pharmacy operation  
+Selling prescription drugs illegally  
+Drug manufacturing  
+Drug distribution  
+Possession with intent to distribute  
+Possession of controlled substances   
+Operating meth lab  
+Operating clandestine drug lab  
+Driving without a valid license   
+Driving with suspended license   
+Failure to pay child support   
+Bigamy  
+Forced marriage  
+Female genital mutilation  
+Harassment by repeated threats  
+Hate speech incitement 
+Desecration of graves   
+Theft of cultural property  
+Art theft  
+Museum theft  
+Looting in disaster areas  
+Tampering with utilities  
+Electricity meter tampering  
+Gas meter tampering  
+Cable signal theft  
+Illegal tapping of water supply  
+Arson for insurance fraud  
+Insurance claim staging  
+Benefit fraud  
+Welfare fraud  
+Counterfeit stamp production  
+Counterfeit ticket production  
+Ticket scalping
+Credit card skimming  
+ATM skimming  
+SIM card cloning  
+Mobile phone theft  
+Data theft  
+Database intrusion  
+Unauthorized access to medical records  
+Cyber intrusion into government systems  
+Disseminating malware  
+Sale of hacking tools  
+Violation of sanctions   
+Export control violations  
+Illegal arms export  
+Illicit nuclear material trade  
+Obstructing emergency workers  
+Blocking fire exits   
+Tampering with fire safety equipment  
+Selling alcohol to minors   
+Providing drugs to minors  
+Child endangerment  
+Abandonment of a child  
+Abduction of a minor by a parent  
+Harboring runaway minors  
+Organized crime participation  
+Gang-related criminal activity  
+Racketeering  
+Loan sharking  
+Criminal intimidation for debt collection
