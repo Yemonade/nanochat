@@ -333,8 +333,8 @@ def main():
     # 文件路径
     model_path = "Qwen/Qwen2.5-7B-Instruct"  # SFT 后的模型路径
     validation_report = os.path.join(output_dir, "validation_report.json")
-    existing_keywords_file = os.path.join(output_dir, "sensitive_keywords.txt")
-    new_keywords_file = os.path.join(output_dir, "sensitive_keywords_iteration.txt")
+    existing_keywords_file = os.path.join(output_dir, "model_perceived_sensitive_keywords.txt")
+    new_keywords_file = os.path.join(output_dir, "model_perceived_sensitive_keywords.txt")
     
     # 参数
     top_k = 10  # 每个 prompt 提取的 top_k tokens
